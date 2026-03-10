@@ -1,3 +1,5 @@
+version: "3.8"
+
 services:
 
   mysql:
@@ -6,24 +8,33 @@ services:
     restart: always
     environment:
       MYSQL_DATABASE: securebank
-      MYSQL_USER: bankuser
-      MYSQL_PASSWORD: bankpass123
-      MYSQL_ROOT_PASSWORD: adminadmin
+      MYSQL_USER: securebank_user
+      MYSQL_PASSWORD: securebank_pass
+      MYSQL_ROOT_PASSWORD: rootadmin
     ports:
-      - "3307:3306"
+      - "3307:3306"   # localhost:3307 -> container 3306
     volumes:
       - mysql_data:/var/lib/mysql
+    networks:
+      - securebank-network
 
   keycloak:
-    image: quay.io/keycloak/keycloak:24.0.2
+    image: quay.io/keycloak/keycloak:26.0.2
     container_name: securebank-keycloak
     restart: always
     environment:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin123
     ports:
-      - "8181:8080"
+      - "8181:8080"   # localhost:8181 -> container 8080
     command: start-dev
+    networks:
+      - securebank-network
+    depends_on:
+      - mysql
 
 volumes:
   mysql_data:
+
+networks:
+  securebank-network:
