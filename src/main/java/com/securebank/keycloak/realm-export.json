@@ -1,0 +1,71 @@
+{
+  "realm": "securebank",
+  "enabled": true,
+  "clients": [
+    {
+      "clientId": "bank-api",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "bank-api-secret",
+      "directAccessGrantsEnabled": true,
+      "publicClient": false
+    }
+  ],
+  "roles": {
+    "realm": [
+      {"name": "CUSTOMER"},
+      {"name": "TELLER"},
+      {"name": "LOAN_OFFICER"},
+      {"name": "RISK_ANALYST"},
+      {"name": "AUDITOR"},
+      {"name": "SUPER_ADMIN"}
+    ]
+  },
+  "users": [
+    {
+      "username": "teller_john",
+      "email": "john@securebank.com",
+      "firstName": "John",
+      "lastName": "Teller",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "password123", "temporary": false}],
+      "realmRoles": ["TELLER"]
+    },
+    {
+      "username": "customer_sara",
+      "email": "sara@securebank.com",
+      "firstName": "Sara",
+      "lastName": "Customer",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "password123", "temporary": false}],
+      "realmRoles": ["CUSTOMER"]
+    },
+    {
+      "username": "loan_ahmed",
+      "email": "ahmed@securebank.com",
+      "firstName": "Ahmed",
+      "lastName": "LoanOfficer",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "password123", "temporary": false}],
+      "realmRoles": ["LOAN_OFFICER"]
+    },
+    {
+      "username": "risk_karim",
+      "email": "karim@securebank.com",
+      "firstName": "Karim",
+      "lastName": "RiskAnalyst",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "password123", "temporary": false}],
+      "realmRoles": ["RISK_ANALYST"]
+    },
+    {
+      "username": "auditor_nadia",
+      "email": "nadia@securebank.com",
+      "firstName": "Nadia",
+      "lastName": "Auditor",
+      "enabled": true,
+      "credentials": [{"type": "password", "value": "password123", "temporary": false}],
+      "realmRoles": ["AUDITOR"]
+    }
+  ]
+}

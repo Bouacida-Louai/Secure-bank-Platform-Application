@@ -1,6 +1,6 @@
 package com.securebank.common;
 
-import com.securebank.user.UserSyncService;
+import com.securebank.permission.UserSyncService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

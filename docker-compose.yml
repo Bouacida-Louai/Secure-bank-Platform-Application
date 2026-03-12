@@ -31,10 +31,12 @@ services:
       KC_DB_PASSWORD: securebank123
     ports:
       - "8181:8080"
-    command: start-dev
+    volumes:
+      - ./keycloak:/opt/keycloak/data/import  # ← mount realm file
+    command: start-dev --import-realm           # ← auto import on startup
     depends_on:
       mysql:
-        condition: service_healthy   # ← waits for MySQL to be ready
+        condition: service_healthy
 
 volumes:
   mysql_data:
