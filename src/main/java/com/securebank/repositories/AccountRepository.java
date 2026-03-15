@@ -14,7 +14,9 @@ import java.util.Optional;
 
 @Repository
 public interface AccountRepository extends JpaRepository<AccountEntity,Long> {
+
    List<AccountEntity> findByOwnerId(Long ownweId);
+   List<AccountEntity> findAllByOwnerId(Long ownweId);
     Optional<AccountEntity> findByAccountNumber(String accountNumber);
     List<AccountEntity> findAllByOwnerIdAndStatus(Long ownerId, AccountStatus status);
 
