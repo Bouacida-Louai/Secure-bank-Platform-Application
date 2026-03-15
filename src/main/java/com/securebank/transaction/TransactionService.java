@@ -1,7 +1,7 @@
 package com.securebank.transaction;
 
 import com.securebank.account.AccountEntity;
-import com.securebank.audit.AuditService;
+import com.securebank.audit.service.AuditService;
 import com.securebank.permission.UserSyncService;
 import com.securebank.repositories.AccountRepository;
 import com.securebank.repositories.TransactionRepository;

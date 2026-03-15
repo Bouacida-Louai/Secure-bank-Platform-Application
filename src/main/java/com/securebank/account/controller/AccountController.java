@@ -1,5 +1,6 @@
-package com.securebank.account;
+package com.securebank.account.controller;
 
+import com.securebank.account.AccountService;
 import com.securebank.dtos.AccountResponse;
 import com.securebank.dtos.CreateAccountRequest;
 import com.securebank.dtos.FreezeAccountRequest;

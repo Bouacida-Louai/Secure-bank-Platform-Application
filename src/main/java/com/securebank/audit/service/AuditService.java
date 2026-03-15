@@ -1,5 +1,6 @@
-package com.securebank.audit;
+package com.securebank.audit.service;
 
+import com.securebank.audit.AuditLogEntity;
 import com.securebank.common.UserContext;
 import com.securebank.repositories.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
