@@ -5,6 +5,8 @@ import com.securebank.loan.dtos.LoanDecisionRequest;
 import com.securebank.loan.dtos.LoanResponse;
 import com.securebank.loan.dtos.RepaymentScheduleResponse;
 import com.securebank.loan.service.LoanService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -17,67 +19,91 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/loans")
 @RequiredArgsConstructor
+@Tag(name = "Loans", description = "Loan lifecycle — apply, review, approve, reject")
 public class LoanController {
 
     private final LoanService loanService;
 
-    // CUSTOMER applies
     @PostMapping("/apply")
     @PreAuthorize("@bankSecurity.can('loan:apply')")
+    @Operation(
+            summary = "Apply for loan",
+            description = "CUSTOMER only — submit a new loan application"
+    )
     public ResponseEntity<LoanResponse> apply(
             @Valid @RequestBody LoanApplicationRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(loanService.applyForLoan(request));
     }
 
-    // LOAN_OFFICER starts review
     @PatchMapping("/{id}/review")
     @PreAuthorize("hasRole('LOAN_OFFICER')")
+    @Operation(
+            summary = "Start loan review",
+            description = "LOAN_OFFICER only — moves loan from SUBMITTED to UNDER_REVIEW"
+    )
     public ResponseEntity<LoanResponse> review(
             @PathVariable Long id) {
         return ResponseEntity.ok(loanService.reviewLoan(id));
     }
 
-    // LOAN_OFFICER approves (under 50K)
-    // SUPER_ADMIN approves (any amount)
     @PatchMapping("/{id}/approve")
     @PreAuthorize("hasAnyRole('LOAN_OFFICER','SUPER_ADMIN')")
+    @Operation(
+            summary = "Approve loan",
+            description = "LOAN_OFFICER approves under $50K, loans over $50K escalate to PENDING_MANAGER"
+    )
     public ResponseEntity<LoanResponse> approve(
             @PathVariable Long id) {
         return ResponseEntity.ok(loanService.approveLoan(id));
     }
 
-    // LOAN_OFFICER or SUPER_ADMIN rejects
     @PatchMapping("/{id}/reject")
     @PreAuthorize("hasAnyRole('LOAN_OFFICER','SUPER_ADMIN')")
+    @Operation(
+            summary = "Reject loan",
+            description = "LOAN_OFFICER or SUPER_ADMIN — reject with a reason"
+    )
     public ResponseEntity<LoanResponse> reject(
             @PathVariable Long id,
             @RequestBody LoanDecisionRequest request) {
         return ResponseEntity.ok(loanService.rejectLoan(id, request));
     }
 
-    // CUSTOMER sees their loans
     @GetMapping("/my")
+    @Operation(
+            summary = "Get my loans",
+            description = "CUSTOMER sees their own loan applications and statuses"
+    )
     public ResponseEntity<List<LoanResponse>> myLoans() {
         return ResponseEntity.ok(loanService.getMyLoans());
     }
 
-    // LOAN_OFFICER sees pending loans
     @GetMapping("/pending")
     @PreAuthorize("hasAnyRole('LOAN_OFFICER','SUPER_ADMIN')")
+    @Operation(
+            summary = "Get pending loans",
+            description = "LOAN_OFFICER and SUPER_ADMIN — view all loans awaiting decision"
+    )
     public ResponseEntity<List<LoanResponse>> pendingLoans() {
         return ResponseEntity.ok(loanService.getPendingLoans());
     }
 
-    // Get loan by ID
     @GetMapping("/{id}")
+    @Operation(
+            summary = "Get loan by ID",
+            description = "Returns loan details including status and reviewer"
+    )
     public ResponseEntity<LoanResponse> getLoan(
             @PathVariable Long id) {
         return ResponseEntity.ok(loanService.getLoanById(id));
     }
 
-    // Get repayment schedule
     @GetMapping("/{id}/schedule")
+    @Operation(
+            summary = "Get repayment schedule",
+            description = "Returns monthly installments for an approved loan"
+    )
     public ResponseEntity<List<RepaymentScheduleResponse>> schedule(
             @PathVariable Long id) {
         return ResponseEntity.ok(

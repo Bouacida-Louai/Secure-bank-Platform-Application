@@ -5,6 +5,7 @@ import com.securebank.audit.service.AuditService;
 import com.securebank.permission.UserSyncService;
 import com.securebank.repositories.AccountRepository;
 import com.securebank.repositories.TransactionRepository;
+import com.securebank.risk.FraudDetectionService;
 import com.securebank.transaction.dto.DepositWithdrawRequest;
 import com.securebank.transaction.dto.TransactionResponse;
 import com.securebank.transaction.dto.TransferRequest;
@@ -29,6 +30,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final UserSyncService userSyncService;
     private final AuditService auditService;
+    private final FraudDetectionService fraudDetectionService; // ← added
 
     private TransactionResponse toResponse(TransactionEntity tx) {
         return TransactionResponse.builder()
@@ -46,14 +48,12 @@ public class TransactionService {
                 .build();
     }
 
-    // TELLER deposits money into account
     @Transactional
     public TransactionResponse deposit(DepositWithdrawRequest request) {
         AccountEntity account = accountRepository
                 .findByIdWithLock(request.getAccountId())
                 .orElseThrow(() -> new RuntimeException("Account not found"));
 
-        // Save balance before for audit
         BigDecimal balanceBefore = account.getBalance();
 
         account.credit(request.getAmount());
@@ -71,8 +71,8 @@ public class TransactionService {
                 .build();
 
         TransactionEntity saved = transactionRepository.save(tx);
+        fraudDetectionService.analyzeTransaction(saved); // ← added
 
-        // Audit log
         auditService.log("DEPOSIT", "Account", account.getId(),
                 Map.of("balance", balanceBefore),
                 Map.of("balance", account.getBalance())
@@ -81,7 +81,6 @@ public class TransactionService {
         return toResponse(saved);
     }
 
-    // TELLER withdraws money from account
     @Transactional
     public TransactionResponse withdraw(DepositWithdrawRequest request) {
         AccountEntity account = accountRepository
@@ -90,7 +89,6 @@ public class TransactionService {
 
         BigDecimal balanceBefore = account.getBalance();
 
-        // debit() checks frozen + insufficient funds
         account.debit(request.getAmount());
         accountRepository.save(account);
 
@@ -106,6 +104,7 @@ public class TransactionService {
                 .build();
 
         TransactionEntity saved = transactionRepository.save(tx);
+        fraudDetectionService.analyzeTransaction(saved); // ← added
 
         auditService.log("WITHDRAWAL", "Account", account.getId(),
                 Map.of("balance", balanceBefore),
@@ -115,11 +114,11 @@ public class TransactionService {
         return toResponse(saved);
     }
 
-    // CUSTOMER or TELLER transfers between accounts
     @Transactional(isolation = Isolation.REPEATABLE_READ)
     public TransactionResponse transfer(TransferRequest request) {
-        if (!request.getFromAccountId().equals(request.getToAccountId())) {// Lock BOTH accounts — always in same order to prevent deadlock
-            Long firstId = Math.min(
+        if (!request.getFromAccountId().equals(request.getToAccountId())) {
+
+            Long firstId  = Math.min(
                     request.getFromAccountId(), request.getToAccountId());
             Long secondId = Math.max(
                     request.getFromAccountId(), request.getToAccountId());
@@ -131,13 +130,11 @@ public class TransactionService {
                     .findByIdWithLock(secondId)
                     .orElseThrow(() -> new RuntimeException("Account not found"));
 
-            // Identify which is from and which is to
             AccountEntity fromAccount = first.getId()
                     .equals(request.getFromAccountId()) ? first : second;
             AccountEntity toAccount = first.getId()
                     .equals(request.getToAccountId()) ? first : second;
 
-            // Check ownership for CUSTOMER
             UserEntity currentUser = userSyncService.syncUser();
             if (currentUser.getRole() == UserRole.CUSTOMER) {
                 if (!fromAccount.getOwner().getId()
@@ -148,7 +145,7 @@ public class TransactionService {
             }
 
             BigDecimal fromBefore = fromAccount.getBalance();
-            BigDecimal toBefore = toAccount.getBalance();
+            BigDecimal toBefore   = toAccount.getBalance();
 
             fromAccount.debit(request.getAmount());
             toAccount.credit(request.getAmount());
@@ -167,24 +164,24 @@ public class TransactionService {
                     .build();
 
             TransactionEntity saved = transactionRepository.save(tx);
+            fraudDetectionService.analyzeTransaction(saved); // ← added
 
             auditService.log("TRANSFER", "Account",
                     fromAccount.getId(),
                     Map.of("fromBalance", fromBefore,
-                            "toBalance", toBefore),
+                            "toBalance",   toBefore),
                     Map.of("fromBalance", fromAccount.getBalance(),
-                            "toBalance", toAccount.getBalance())
+                            "toBalance",   toAccount.getBalance())
             );
 
             return toResponse(saved);
+
         } else {
             throw new RuntimeException(
                     "Cannot transfer to the same account");
         }
-
     }
 
-    // Get transaction history for an account
     public List<TransactionResponse> getTransactionHistory(Long accountId) {
         return transactionRepository
                 .findTransactionHistory(accountId)

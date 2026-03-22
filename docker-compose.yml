@@ -32,8 +32,24 @@ services:
     ports:
       - "8181:8080"
     volumes:
-      - ./keycloak:/opt/keycloak/data/import  # ← mount realm file
-    command: start-dev --import-realm           # ← auto import on startup
+      - ./keycloak:/opt/keycloak/data/import
+    command: start-dev --import-realm
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  app:
+    build: .
+    container_name: securebank-app
+    restart: always
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/securebank?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: securebank123
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_ISSUER_URI: http://keycloak:8080/realms/securebank
+      SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI: http://keycloak:8080/realms/securebank/protocol/openid-connect/certs
+    ports:
+      - "8081:8081"
     depends_on:
       mysql:
         condition: service_healthy
